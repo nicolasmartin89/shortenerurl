@@ -1,4 +1,4 @@
-package com.nicom.shortenerurl.security;
+package com.nicom.shortenerurl.security.jwt;
 
 import com.nicom.shortenerurl.services.UserDetailsImpl;
 import io.jsonwebtoken.JwtException;
