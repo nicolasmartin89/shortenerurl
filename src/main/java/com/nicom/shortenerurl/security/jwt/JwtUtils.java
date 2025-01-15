@@ -17,41 +17,47 @@ import java.util.stream.Collectors;
 
 @Component
 public class JwtUtils {
-    //Authorization se pasa por el header así:
-    //Authorizathion -> Bearer <TOKEN>
-    //Tengo que extraer ese token del header.
 
     @Value("${jwt.secret}")
     private String jwtSecret;
 
     @Value("${jwt.expiration}")
-    private String jwtExpirationMs;
+    private Long jwtExpirationMs;
 
-    public String getJwtFromHeader(HttpServletRequest request){
+    /**
+     * Extrae el token JWT del encabezado Authorization.
+     */
+    public String getJwtFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        if(bearerToken != null && bearerToken.startsWith("Bearer ")){
-            return bearerToken.substring(7);
-        }
-        return null;
+        return (bearerToken != null && bearerToken.startsWith("Bearer ")) ? bearerToken.substring(7) : null;
     }
 
-    public String generateToken(UserDetailsImpl userDetails){
+    /**
+     * Genera un token JWT para un usuario autenticado.
+     */
+    public String generateToken(UserDetailsImpl userDetails) {
         String username = userDetails.getUsername();
         String roles = userDetails.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
+        Date now = new Date();
+        Date expirationDate = new Date(now.getTime() + jwtExpirationMs);
+
         return Jwts.builder()
                 .subject(username)
                 .claim("roles", roles)
-                .issuedAt(new Date())
-                .expiration(new Date((new Date().getTime() + jwtExpirationMs)))
+                .issuedAt(now)
+                .expiration(expirationDate)
                 .signWith(key())
                 .compact();
     }
 
-    public String getUsernameFromJwtToken(String token){
+    /**
+     * Extrae el nombre de usuario del token JWT.
+     */
+    public String getUsernameFromJwtToken(String token) {
         return Jwts.parser()
                 .verifyWith((SecretKey) key())
                 .build()
@@ -59,17 +65,27 @@ public class JwtUtils {
                 .getPayload()
                 .getSubject();
     }
-    private Key key(){
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
-    }
 
-    public boolean validateToken(String authToken){
+    /**
+     * Valida la firma y la integridad del token JWT.
+     */
+    public boolean validateToken(String authToken) {
         try {
             Jwts.parser().verifyWith((SecretKey) key())
-                    .build().parseSignedClaims(authToken);
+                    .build()
+                    .parseSignedClaims(authToken);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            throw new RuntimeException(e);
+            // Manejo más claro de errores de validación
+            System.err.println("Token inválido: " + e.getMessage());
+            return false;
         }
+    }
+
+    /**
+     * Devuelve la clave secreta para firmar el JWT.
+     */
+    private Key key() {
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
     }
 }

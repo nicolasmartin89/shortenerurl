@@ -1,5 +1,6 @@
 package com.nicom.shortenerurl.controller;
 
+import com.nicom.shortenerurl.dtos.LoginRequest;
 import com.nicom.shortenerurl.dtos.RegisterRequest;
 import com.nicom.shortenerurl.models.User;
 import com.nicom.shortenerurl.services.UserService;
@@ -25,5 +26,10 @@ public class AuthController {
         user.setRole("ROLE_USER");
         userService.registerUser(user);
         return ResponseEntity.ok("User registered successfully");
+    }
+
+    @PostMapping("/public/login")
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest){
+        return ResponseEntity.ok(userService.loginUser(loginRequest));
     }
 }
