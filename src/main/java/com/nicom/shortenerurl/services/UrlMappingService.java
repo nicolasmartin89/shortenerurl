@@ -3,6 +3,7 @@ package com.nicom.shortenerurl.services;
 
 import com.nicom.shortenerurl.dtos.ClickEventDto;
 import com.nicom.shortenerurl.dtos.UrlMappingDto;
+import com.nicom.shortenerurl.models.ClickEvent;
 import com.nicom.shortenerurl.models.UrlMapping;
 import com.nicom.shortenerurl.models.User;
 import com.nicom.shortenerurl.repository.ClickEventRepository;
@@ -10,8 +11,10 @@ import com.nicom.shortenerurl.repository.UrlMappingRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -79,5 +82,14 @@ public class UrlMappingService {
                     .collect(Collectors.toList());
         }
         return  null;
+    }
+
+    public Map<LocalDate, Long> getTotalClicksByUser(User user, LocalDate start, LocalDate end) {
+        List<UrlMapping> urlMappings = urlMappingRepository.findByUser(user);
+        List<ClickEvent> clickEvents = clickEventRepository.findByUrlMappingInAndClickDateBetween(urlMappings, start.atStartOfDay(), end.plusDays(1).atStartOfDay());
+        return
+                clickEvents.stream()
+                        .collect(Collectors.groupingBy(
+                                click -> click.getClickDate().toLocalDate(), Collectors.counting()));
     }
 }
